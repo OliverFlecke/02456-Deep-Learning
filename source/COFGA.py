@@ -5,9 +5,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from keras import models, layers, optimizers, applications
-
-# Loss functions
+from keras import models, layers, optimizers, losses, applications
+from keras.preprocessing.image import ImageDataGenerator
 
 # def AP(ys, ts):
 #     """
@@ -23,8 +22,6 @@ from keras import models, layers, optimizers, applications
 #     """
 #     return mean(aps)
 
-
-# Models
 
 class MNet(models.Sequential):
     """
@@ -76,30 +73,62 @@ class RNet(models.Sequential):
 rnet = RNet()
 rnet.summary()
     
-lr = 0.01
-momentum = 0.9
-optimizer = optimizers.SGD(lr, momentum)
-
-batch_size = 32
-epochs = 100
-
-
-# def train():
-#     # Compile the model
-#     model.compile(loss='categorical_crossentropy',
-#                 optimizer=optimizer,
-#                 metrics=['acc'])
-#     # Train the model
-#     history = model.fit_generator(
-#         train_generator,
-#         steps_per_epoch=train_generator.samples/train_generator.batch_size ,
-#         epochs=epochs,
-#         validation_data=validation_generator,
-#         validation_steps=validation_generator.samples/validation_generator.batch_size,
-#         verbose=1)
+# https://keras.io/preprocessing/image/#imagedatagenerator-class
+# Data augmentation
+# train_datagen = ImageDataGenerator(
+#     rescale=1./255,
+#     rotation_range=20,
+#     width_shift_range=0.2,
+#     height_shift_range=0.2,
+#     horizontal_flip=True,
+#     vertical_flip=True,
+#     fill_mode='nearest')
  
-#     # # Save the model
-#     # model.save('small_last4.h5')
+# validation_datagen = ImageDataGenerator(rescale=1./255)
+
+generator_args = {
+    'train_dir':'./dataset_v2/train', 
+    'val_dir':'./dataset_v2/test', 
+    'train_batch_size':100, 
+    'val_batch_size':10, 
+    'image_size':128
+}
+
+def get_generators(train_dir, val_dir, 
+        train_batch_size, val_batch_size, image_size):
+    train = ImageDataGenerator().flow_from_directory(train_dir,
+            target_size=(image_size, image_size),
+            batch_size=train_batch_size)    
+    valid = ImageDataGenerator().flow_from_directory(val_dir,
+            target_size=(image_size, image_size),
+            batch_size=val_batch_size, shuffle=False)
+    return train, valid
+
+train_gen, valid_gen = get_generators(**generator_args)
+
+train_args = {
+    'train':train_gen,
+    'valid':valid_gen,
+    'epochs':100, 
+    'loss':losses.binary_crossentropy,
+    'optimizer':optimizers.SGD(lr=0.01, momentum=0.9)
+}
+
+def train(model, train, valid, epochs, loss, optimizer):
+    # Compile the model
+    model.compile(optimizer, loss, metrics=['acc'])
+    # Train the model
+    model.fit_generator(train, epochs=epochs,
+        steps_per_epoch=train.samples/train.batch_size,
+        validation_steps=valid.samples/valid.batch_size,
+        validation_data=valid, 
+        verbose=1)
+ 
+    # # Save the model
+    # model.save('small_last4.h5')
+
+train(mnet, **train_args)
+mnet.evaluate()
 
 # def eval():
 #     """
