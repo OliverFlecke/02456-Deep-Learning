@@ -74,60 +74,44 @@ rnet = RNet()
 rnet.summary()
     
 # https://keras.io/preprocessing/image/#imagedatagenerator-class
-# Data augmentation
-# train_datagen = ImageDataGenerator(
-#     rescale=1./255,
-#     rotation_range=20,
-#     width_shift_range=0.2,
-#     height_shift_range=0.2,
-#     horizontal_flip=True,
-#     vertical_flip=True,
-#     fill_mode='nearest')
- 
-# validation_datagen = ImageDataGenerator(rescale=1./255)
+
 
 generator_args = {
-    'train_dir':'./dataset_v2/train', 
-    'val_dir':'./dataset_v2/test', 
-    'train_batch_size':100, 
-    'val_batch_size':10, 
-    'image_size':128
+    'rescale':1./255,
+    'validation_split':0.3,
+    # 'rotation_range'=20,
+    # 'width_shift_range'=0.2,
+    # 'height_shift_range'=0.2,
+    # 'horizontal_flip'=True,
+    # 'vertical_flip'=True,
 }
 
-def get_generators(train_dir, val_dir, 
-        train_batch_size, val_batch_size, image_size):
-    train = ImageDataGenerator().flow_from_directory(train_dir,
-            target_size=(image_size, image_size),
-            batch_size=train_batch_size)    
-    valid = ImageDataGenerator().flow_from_directory(val_dir,
-            target_size=(image_size, image_size),
-            batch_size=val_batch_size, shuffle=False)
-    return train, valid
+generator = ImageDataGenerator(**generator_args)
 
-train_gen, valid_gen = get_generators(**generator_args)
+flow_args = {
+    'directory':'../dataset_v2/train/classes',
+    'target_size':(128, 128)
+}
 
-train_args = {
-    'train':train_gen,
-    'valid':valid_gen,
-    'epochs':100, 
+train_gen = generator.flow_from_directory(subset='training', **flow_args)
+valid_gen = generator.flow_from_directory(subset='validation', **flow_args)
+
+compile_args = {
+    'optimizer':optimizers.SGD(lr=0.01, momentum=0.9),
     'loss':losses.binary_crossentropy,
-    'optimizer':optimizers.SGD(lr=0.01, momentum=0.9)
+    'metrics':['acc']
+}
+fit_gen_args = {
+    'generator':train_gen,
+    'validation_data':valid_gen,
+    'steps_per_epoch':train_gen.samples/train_gen.batch_size,
+    'validation_steps':valid_gen.samples/valid_gen.batch_size,
+    'epochs':100, 
+    'class_weight':None
 }
 
-def train(model, train, valid, epochs, loss, optimizer):
-    # Compile the model
-    model.compile(optimizer, loss, metrics=['acc'])
-    # Train the model
-    model.fit_generator(train, epochs=epochs,
-        steps_per_epoch=train.samples/train.batch_size,
-        validation_steps=valid.samples/valid.batch_size,
-        validation_data=valid, 
-        verbose=1)
- 
-    # # Save the model
-    # model.save('small_last4.h5')
-
-train(mnet, **train_args)
+mnet.compile(**compile_args)
+mnet.fit_generator(**fit_gen_args)
 mnet.evaluate()
 
 # def eval():
