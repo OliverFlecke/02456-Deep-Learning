@@ -25,7 +25,7 @@ def MAP(model, generator):
     
     # AP[np.isnan(AP)] = 0 # or 1?
 
-    return np.mean(AP)
+    return np.mean(AP), AP
 
 
 class MNet(models.Sequential):
@@ -50,8 +50,6 @@ class MNet(models.Sequential):
         self.add(layers.Flatten())
         self.add(layers.Dense(sizes[-2], activation='relu'))
         self.add(layers.Dense(sizes[-1], activation='sigmoid'))
-mnet = MNet()
-mnet.summary()
 
 class RNet(models.Sequential):
     """
@@ -109,11 +107,11 @@ w0 = np.maximum(Nm.astype(np.float)/train_gen.samples, 0.1)
 w = (1 - w0) / w0
 
 def WeightedCELoss(ys, ts):
-    return 1/(tf.shape(ys) + len(w)) * (w * ys * tf.log(ts) + (1 - ys) * tf.log(1 - ts))
+    return 1/(Nm.sum() + len(w)) * (w * ys * tf.log(ts) + (1 - ys) * tf.log(1 - ts))
 
 compile_args = {
-    'optimizer':optimizers.SGD(lr=0.01, momentum=0.9),
-    'loss': WeightedCELoss, #losses.binary_crossentropy,
+    'optimizer':optimizers.SGD(lr=0.01, momentum=0.9), # 0.002
+    'loss': losses.binary_crossentropy, #WeightedCELoss
     'metrics':['acc']
 }
 fit_gen_args = {
@@ -121,13 +119,15 @@ fit_gen_args = {
     'validation_data':valid_gen,
     'steps_per_epoch':len(train_gen),
     'validation_steps':len(valid_gen),
-    'epochs':2, 
+    'epochs':100, 
     'class_weight':None
 }
 
+mnet = MNet()
+mnet.summary()
 mnet.compile(**compile_args)
 mnet.fit_generator(**fit_gen_args)
-mnet.evaluate()
+MAP(mnet, valid_gen)
 
 # Get NaNs indices
 # indices = np.array(range(37))
