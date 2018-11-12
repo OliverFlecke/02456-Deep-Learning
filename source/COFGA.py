@@ -27,7 +27,6 @@ def MAP(model, generator):
 
     return np.mean(AP), AP
 
-
 class MNet(models.Sequential):
     """
         Using pre-trained MobileNet without head
@@ -43,8 +42,8 @@ class MNet(models.Sequential):
             include_top=False, 
             input_shape=sizes[0])
         # Freeze the layers except the last ones
-        for layer in base.layers[:-4]:
-            layer.trainable = False
+        # for layer in base.layers[:-4]:
+        #     layer.trainable = False
 
         self.add(base)
         self.add(layers.Flatten())
@@ -66,8 +65,8 @@ class RNet(models.Sequential):
             include_top=False, 
             input_shape=sizes[0])
         # Freeze the layers except the last ones
-        for layer in base.layers[:-4]:
-            layer.trainable = False
+        # for layer in base.layers[:-4]:
+        #     layer.trainable = False
 
         self.add(base)
         self.add(layers.Flatten())
@@ -93,7 +92,7 @@ generator = ImageDataGenerator(**generator_args)
 
 flow_args = {
     'directory':'../dataset_v2/train/classes',
-    'target_size':(128, 128), #(200, 200) for ResNet50
+    'target_size':(200, 200), #(128, 128) MobileNet / (200, 200) ResNet50
     'batch_size':32
 }
 
@@ -119,15 +118,15 @@ fit_gen_args = {
     'validation_data':valid_gen,
     'steps_per_epoch':len(train_gen),
     'validation_steps':len(valid_gen),
-    'epochs':100, 
+    'epochs':1, 
     'class_weight':None
 }
 
-mnet = MNet()
-mnet.summary()
-mnet.compile(**compile_args)
-mnet.fit_generator(**fit_gen_args)
-MAP(mnet, valid_gen)
+model = RNet()
+model.summary()
+model.compile(**compile_args)
+model.fit_generator(**fit_gen_args)
+MAP(model, valid_gen)
 
 # Get NaNs indices
 # indices = np.array(range(37))
