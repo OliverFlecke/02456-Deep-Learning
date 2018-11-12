@@ -2,6 +2,7 @@
 # https://www.learnopencv.com/installing-deep-learning-frameworks-on-ubuntu-with-cuda-support/
 # https://www.learnopencv.com/keras-tutorial-fine-tuning-using-pre-trained-models/
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -91,8 +92,8 @@ generator_args = {
 generator = ImageDataGenerator(**generator_args)
 
 flow_args = {
-    'directory':'../dataset_v2/train/classes',
-    'target_size':(200, 200), #(128, 128) MobileNet / (200, 200) ResNet50
+    'directory': os.path.join(os.path.dirname(os.path.realpath(__file__)), '../dataset_v2/train/classes'),
+    'target_size':(128, 128), #(200, 200) for ResNet50
     'batch_size':32
 }
 
