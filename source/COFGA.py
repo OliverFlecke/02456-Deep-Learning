@@ -4,29 +4,12 @@
 
 import os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
 from keras import models, layers, optimizers, losses, applications
 from keras.preprocessing.image import ImageDataGenerator
-
-def MAP(model, generator):
-    """
-        Mean average precision across all categories
-    """
-    predictions = model.predict_generator(generator, steps=len(generator))
-    predictions = np.argmax(predictions, axis=-1)
-    targets = generator.classes
-
-    AP = np.zeros(len(generator.class_indices))
-    
-    for c in np.unique(generator.classes):
-    # for c in generator.class_indices.values():
-        AP[c] = np.mean(predictions[targets==c] == c)
-    
-    # AP[np.isnan(AP)] = 0 # or 1?
-
-    return np.mean(AP), AP
 
 class MNet(models.Sequential):
     """
@@ -81,7 +64,7 @@ class RNet(models.Sequential):
 
 generator_args = {
     'rescale':1./255,
-    'validation_split':0.3,
+    # 'validation_split':0.3,
     # 'rotation_range'=45,
     # 'width_shift_range'=0.2,
     # 'height_shift_range'=0.2,
@@ -92,13 +75,13 @@ generator_args = {
 generator = ImageDataGenerator(**generator_args)
 
 flow_args = {
-    'directory': os.path.join(os.path.dirname(os.path.realpath(__file__)), '../dataset_v2/train/classes'),
+    # 'directory': '../dataset_v2/train/classes',
     'target_size':(128, 128), #(200, 200) for ResNet50
     'batch_size':32
 }
 
-train_gen = generator.flow_from_directory(subset='training', **flow_args)
-valid_gen = generator.flow_from_directory(subset='validation', **flow_args)
+train_gen = generator.flow_from_directory(directory='../dataset_v2/train/classes', **flow_args)
+valid_gen = generator.flow_from_directory(directory='../dataset_v2/train/cropped', **flow_args, shuffle=False)
 
 
 from collections import Counter
@@ -116,99 +99,52 @@ compile_args = {
 }
 fit_gen_args = {
     'generator':train_gen,
-    'validation_data':valid_gen,
+    # 'validation_data':valid_gen,
     'steps_per_epoch':len(train_gen),
-    'validation_steps':len(valid_gen),
-    'epochs':1, 
+    # 'validation_steps':len(valid_gen),
+    'epochs':100, 
     'class_weight':None
 }
 
-model = RNet()
+model = MNet()
 model.summary()
 model.compile(**compile_args)
 model.fit_generator(**fit_gen_args)
-MAP(model, valid_gen)
+model.save('mnet100.h5')
 
-# Get NaNs indices
-# indices = np.array(range(37))
-# indices[np.isnan(AP)]
+model = models.load_model('mnet100.h5')
 
-# Convert to labels
-# label_map = (train_gen.class_indices)
-# label_map = dict((v,k) for k,v in label_map.items()) #flip k,v
-# predictions = [label_map[k] for k in predictions]
+# Get predictions
+predictions_proba = model.predict_generator(valid_gen, steps=len(valid_gen))
+predictions = predictions_proba > 0.1
 
-# mnet.save('mnet.h5')
+np.save('predictions.npy', predictions)
+predictions = np.load('predictions.npy')
 
-# def eval():
-#     """
-#         Check performance by visualizing loss and accuracy curves
-#     """
-#     acc = history.history['acc']
-#     val_acc = history.history['val_acc']
-#     loss = history.history['loss']
-#     val_loss = history.history['val_loss']
-    
-#     epochs = range(len(acc))
-    
-#     plt.plot(epochs, acc, 'b', label='Training acc')
-#     plt.plot(epochs, val_acc, 'r', label='Validation acc')
-#     plt.title('Training and validation accuracy')
-#     plt.legend()
-    
-#     plt.figure()
-    
-#     plt.plot(epochs, loss, 'b', label='Training loss')
-#     plt.plot(epochs, val_loss, 'r', label='Validation loss')
-#     plt.title('Training and validation loss')
-#     plt.legend()
-    
-#     plt.show()
+# Get targets
+train = pd.read_csv('../dataset_v2/train.csv')
+train = train.replace(' ', '_', regex=True)
+train = train.replace('/', '_', regex=True)
+train = train.drop(['p1_x', 'p_1y', ' p2_x', ' p2_y', ' p3_x', ' p3_y', ' p4_x', ' p4_y'], axis=1)
+for category in ['general_class', 'sub_class', 'color']:
+    train[category] = train[category].astype('category')
+train = pd.get_dummies(train, prefix='', prefix_sep='')
+train = train.groupby(['image_id', 'tag_id']).first()
+train = train.reindex_axis(sorted(train.columns), axis=1)
+targets = train.values
 
-# def visualize():
-#     """
-#         Visualize the errors that occurred
-#     """
-#     # Create a generator for prediction
-#     validation_generator = validation_datagen.flow_from_directory(
-#             validation_dir,
-#             target_size=(image_size, image_size),
-#             batch_size=val_batchsize,
-#             class_mode='categorical',
-#             shuffle=False)
-    
-#     # Get the filenames from the generator
-#     fnames = validation_generator.filenames
-    
-#     # Get the ground truth from generator
-#     ground_truth = validation_generator.classes
-    
-#     # Get the label to class mapping from the generator
-#     label2index = validation_generator.class_indices
-    
-#     # Getting the mapping from class index to class label
-#     idx2label = dict((v,k) for k,v in label2index.items())
-    
-#     # Get the predictions from the model using the generator
-#     predictions = model.predict_generator(validation_generator, steps=validation_generator.samples/validation_generator.batch_size,verbose=1)
-#     predicted_classes = np.argmax(predictions,axis=1)
-    
-#     errors = np.where(predicted_classes != ground_truth)[0]
-#     print("No of errors = {}/{}".format(len(errors),validation_generator.samples))
-    
-#     # Show the errors
-#     for i in range(len(errors)):
-#         pred_class = np.argmax(predictions[errors[i]])
-#         pred_label = idx2label[pred_class]
-        
-#         title = 'Original label:{}, Prediction :{}, confidence : {:.3f}'.format(
-#             fnames[errors[i]].split('/')[0],
-#             pred_label,
-#             predictions[errors[i]][pred_class])
-        
-#         original = load_img('{}/{}'.format(validation_dir,fnames[errors[i]]))
-#         plt.figure(figsize=[7,7])
-#         plt.axis('off')
-#         plt.title(title)
-#         plt.imshow(original)
-#         plt.show()
+def APScore(ys, ts):    
+    K = 1 #= (ts==1).sum()
+    TP = ys[ts==1].sum()
+    FP = ys[ts!=1].sum()
+    return (1/K) * (TP / (TP + FP))
+
+assert(predictions.shape == targets.shape)
+N_c = targets.shape[1]
+AP = np.zeros(N_c)
+for category in range(N_c):
+    AP[category] = APScore(predictions[:,category], targets[:,category])
+
+MAP = np.mean(AP)
+
+(MAP, AP)
