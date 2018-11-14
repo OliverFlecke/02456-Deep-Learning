@@ -131,20 +131,22 @@ for category in ['general_class', 'sub_class', 'color']:
 train = pd.get_dummies(train, prefix='', prefix_sep='')
 train = train.groupby(['image_id', 'tag_id']).first()
 train = train.reindex_axis(sorted(train.columns), axis=1)
-targets = train.values
+targets = (train.values == 1) # Remove -1s
 
 def APScore(ys, ts):    
-    K = 1 #= (ts==1).sum()
-    TP = ys[ts==1].sum()
-    FP = ys[ts!=1].sum()
-    return (1/K) * (TP / (TP + FP))
+    TP = 0; FP = 0; total = 0
+    for (y,t) in zip(ys,ts):
+        TP += y and t
+        FP += y and not t
+        total += (TP / (TP + FP)) if t else 0
+    return total / sum(ts)
 
 assert(predictions.shape == targets.shape)
-N_c = targets.shape[1]
-AP = np.zeros(N_c)
-for category in range(N_c):
+N, M = targets.shape
+AP = np.zeros(M)
+for category in range(M):
     AP[category] = APScore(predictions[:,category], targets[:,category])
-
 MAP = np.mean(AP)
 
-(MAP, AP)
+MAP
+AP
