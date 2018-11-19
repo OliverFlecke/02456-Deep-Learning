@@ -20,13 +20,13 @@ class MNet(models.Sequential):
     """
     def __init__(self, **kwargs):
         super(MNet, self).__init__()
-        
+
         sizes = [(128,128,3), (4,4,1024), 1024, 37]
 
         # Load the pre-trained base model
         base = applications.MobileNet(
-            weights='imagenet', 
-            include_top=False, 
+            weights='imagenet',
+            include_top=False,
             input_shape=sizes[0])
         # Freeze the layers except the last ones
         # for layer in base.layers[:-4]:
@@ -43,13 +43,13 @@ class RNet(models.Sequential):
     """
     def __init__(self):
         super(RNet, self).__init__()
-        
+
         sizes = [(200,200,3), (7,7,2048), 1024, 37]
 
         # Load the pre-trained base model
         base = applications.ResNet50(
-            weights='imagenet', 
-            include_top=False, 
+            weights='imagenet',
+            include_top=False,
             input_shape=sizes[0])
         # Freeze the layers except the last ones
         # for layer in base.layers[:-4]:
@@ -61,7 +61,7 @@ class RNet(models.Sequential):
         self.add(layers.Dense(sizes[-1], activation='sigmoid'))
 # rnet = RNet()
 # rnet.summary()
-    
+
 # https://keras.io/preprocessing/image/#imagedatagenerator-class
 
 
@@ -105,7 +105,7 @@ fit_gen_args = {
     # 'validation_data':valid_gen,
     'steps_per_epoch':len(train_gen),
     # 'validation_steps':len(valid_gen),
-    'epochs':100, 
+    'epochs':100,
     'class_weight':None
 }
 
@@ -141,7 +141,7 @@ train = train.groupby(['image_id', 'tag_id']).first()
 train = train.reindex_axis(sorted(train.columns), axis=1)
 targets = (train.values == 1) # Remove -1s
 
-def APScore(ys, ts):    
+def APScore(ys, ts):
     TP = 0; FP = 0; total = 0
     for (y,t) in zip(ys,ts):
         TP += y and t
