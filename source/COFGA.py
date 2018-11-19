@@ -150,3 +150,17 @@ MAP = np.mean(AP)
 
 MAP
 AP
+
+def generate_answers(predictions, pd_tags):
+    answers = pd.read_csv('../dataset_v2/answer_template.csv')
+
+    predictions = pd.DataFrame(predictions,
+        index=pd_tags.reset_index(level='image_id').index.values,
+        columns=pd_tags.columns.values)
+
+    for column in answers.columns.values:
+        answers[column] = predictions[column.replace(' ', '_').replace('/', '_')].sort_values().index.values
+
+    answers.to_csv('../dataset_v2/answer.csv', index=False)
+
+generate_answers(predictions, train)
