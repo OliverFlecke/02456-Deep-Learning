@@ -9,13 +9,16 @@ import matplotlib.pyplot as plt
 
 import tensorflow as tf
 from keras import models, layers, optimizers, losses, applications
+from keras.utils.generic_utils import CustomObjectScope
 from keras.preprocessing.image import ImageDataGenerator
+from sklearn.metrics import average_precision_score as apscore
+from sklearn.metrics import precision_score as pscore
 
 class MNet(models.Sequential):
     """
         Using pre-trained MobileNet without head
     """
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(MNet, self).__init__()
         
         sizes = [(128,128,3), (4,4,1024), 1024, 37]
@@ -110,14 +113,19 @@ model = MNet()
 model.summary()
 model.compile(**compile_args)
 model.fit_generator(**fit_gen_args)
-model.save('mnet100.h5')
+model.save('test.h5')
 
-model = models.load_model('mnet100.h5')
+
+model = MNet()
+model.load_weights('../mnet100.h5')
+
+# model = models.load_model('../mnet100.h5', custom_objects={'MNet':MNet})
 
 # Get predictions
 predictions_proba = model.predict_generator(valid_gen, steps=len(valid_gen))
 predictions = predictions_proba > 0.1
 
+np.save('predictions_proba.npy', predictions_proba)
 np.save('predictions.npy', predictions)
 predictions = np.load('predictions.npy')
 
@@ -139,6 +147,8 @@ def APScore(ys, ts):
         TP += y and t
         FP += y and not t
         total += (TP / (TP + FP)) if t else 0
+    # for k in range(1,1+len(ts)):
+    #     total += pscore(ts[:k], ys[:k]) * ts[k-1]
     return total / sum(ts)
 
 assert(predictions.shape == targets.shape)
