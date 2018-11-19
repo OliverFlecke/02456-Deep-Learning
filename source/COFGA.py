@@ -17,13 +17,13 @@ class MNet(models.Sequential):
     """
     def __init__(self):
         super(MNet, self).__init__()
-        
+
         sizes = [(128,128,3), (4,4,1024), 1024, 37]
 
         # Load the pre-trained base model
         base = applications.MobileNet(
-            weights='imagenet', 
-            include_top=False, 
+            weights='imagenet',
+            include_top=False,
             input_shape=sizes[0])
         # Freeze the layers except the last ones
         # for layer in base.layers[:-4]:
@@ -40,13 +40,13 @@ class RNet(models.Sequential):
     """
     def __init__(self):
         super(RNet, self).__init__()
-        
+
         sizes = [(200,200,3), (7,7,2048), 1024, 37]
 
         # Load the pre-trained base model
         base = applications.ResNet50(
-            weights='imagenet', 
-            include_top=False, 
+            weights='imagenet',
+            include_top=False,
             input_shape=sizes[0])
         # Freeze the layers except the last ones
         # for layer in base.layers[:-4]:
@@ -58,7 +58,7 @@ class RNet(models.Sequential):
         self.add(layers.Dense(sizes[-1], activation='sigmoid'))
 # rnet = RNet()
 # rnet.summary()
-    
+
 # https://keras.io/preprocessing/image/#imagedatagenerator-class
 
 
@@ -102,7 +102,7 @@ fit_gen_args = {
     # 'validation_data':valid_gen,
     'steps_per_epoch':len(train_gen),
     # 'validation_steps':len(valid_gen),
-    'epochs':100, 
+    'epochs':100,
     'class_weight':None
 }
 
@@ -133,7 +133,7 @@ train = train.groupby(['image_id', 'tag_id']).first()
 train = train.reindex_axis(sorted(train.columns), axis=1)
 targets = (train.values == 1) # Remove -1s
 
-def APScore(ys, ts):    
+def APScore(ys, ts):
     TP = 0; FP = 0; total = 0
     for (y,t) in zip(ys,ts):
         TP += y and t
@@ -150,17 +150,3 @@ MAP = np.mean(AP)
 
 MAP
 AP
-
-def generate_answers(predictions, pd_tags):
-    answers = pd.read_csv('../dataset_v2/answer_template.csv')
-
-    predictions = pd.DataFrame(predictions,
-        index=pd_tags.reset_index(level='image_id').index.values,
-        columns=pd_tags.columns.values)
-
-    for column in answers.columns.values:
-        answers[column] = predictions[column.replace(' ', '_').replace('/', '_')].sort_values().index.values
-
-    answers.to_csv('../dataset_v2/answer.csv', index=False)
-
-generate_answers(predictions, train)
