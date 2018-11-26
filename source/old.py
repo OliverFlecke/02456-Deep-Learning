@@ -47,20 +47,20 @@
 
 # const = -1/(Nm.sum() + len(w))
 
-# _EPSILON = K.epsilon()
+_EPSILON = K.epsilon()
 
-# def weighted_crossentropy(y_true, y_pred):
-#     y_pred = K.clip(y_pred, _EPSILON, 1.0-_EPSILON)
-#     out = -(w * y_true * K.log(y_pred) + (1.0 - y_true) * K.log(1.0 - y_pred))
-#     return K.mean(out, axis=-1)
+def weighted_crossentropy(y_true, y_pred):
+    y_pred = K.clip(y_pred, _EPSILON, 1.0-_EPSILON)
+    out = -(w * y_true * K.log(y_pred) + (1.0 - y_true) * K.log(1.0 - y_pred))
+    return K.mean(out, axis=-1)
 
 # shape = (6,7)
 # y_a = np.random.random(shape)
 # y_b = np.random.random(shape)
 # K.eval(_loss_tensor(K.variable(y_a), K.variable(y_b)))
 
-# def WeightedCELoss(ys, ts):
-#     return const * (w * ys * tf.log(ts) + (1 - ys) * tf.log(1 - ts))
+def WeightedCELoss(ys, ts):
+    return const * (w * ys * tf.log(ts) + (1 - ys) * tf.log(1 - ts))
 
 
 # get_tag_ids = lambda x: int(re.split(r'[\_.]', x)[-2])
@@ -125,3 +125,34 @@ MAP = np.mean(AP)
 
 MAP
 AP
+
+
+
+# train_gen = generator.flow_from_directory(directory='../dataset_v2/train/classes', **flow_args)
+train_gen = generator.flow_from_directory(directory='../dataset_v2/train/divided/large_vehicle', **flow_args)
+# valid_gen = generator.flow_from_directory(directory='../dataset_v2/train/cropped', **flow_args)
+test_gen = generator.flow_from_directory(directory='../dataset_v2/test/', **flow_args, shuffle=False)
+
+def get_loss_weights(generator):
+    Nm = np.array(sorted(Counter(generator.classes).items()))[:,1]
+    w0 = np.maximum(Nm.astype(np.float)/generator.samples, 0.1)
+    return dict(enumerate( (1 - w0) / w0 ))
+
+Y_train = train_gen.classes
+weights = class_weight.compute_class_weight('balanced'
+                                               ,np.unique(Y_train)
+                                               ,Y_train)
+
+
+
+target_dir = '../models/'
+if not os.path.exists(target_dir):
+    os.makedirs(target_dir)
+
+checkpoint = lambda category, period: callbacks.ModelCheckpoint(
+    filepath=f'{target_dir}{category}.hdf5', 
+    monitor='val_acc', 
+    period=period, 
+    save_weights_only=True,
+    save_best_only=True,
+)

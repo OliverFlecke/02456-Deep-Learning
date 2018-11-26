@@ -16,6 +16,18 @@ def get_pred_columns():
     df = pd.get_dummies(df, prefix='', prefix_sep='')
     return sorted(df.columns)
 
+def create_partial_answers(proba, cols):
+    pred = pd.DataFrame(proba, index=get_pred_index(), columns=cols)
+
+    answers = pd.read_csv('../dataset_v2/answer_template.csv')
+    for col in pred.columns:
+        answers[col] = pred[col].sort_values(ascending=False).index
+
+    for col in set(answers.columns) - set(pred.columns):
+        answers[col] = answers[pred.columns[0]]
+
+    answers.to_csv('../dataset_v2/answer.csv', index=False)
+
 def create_answers(test_predictions_proba):
     predictions = pd.DataFrame(test_predictions_proba,
         index=get_pred_index(), columns=get_pred_columns())
