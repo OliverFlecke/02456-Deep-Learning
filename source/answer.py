@@ -2,8 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 
-def get_pred_index():
-    df = pd.read_csv('../dataset_v2/test.csv')
+def get_pred_index(dataset='test'):
+    df = pd.read_csv(f'../dataset_v2/{dataset}.csv')
     df = df.groupby(['image_id', 'tag_id']).first()
     df = df.reset_index('image_id', drop=True)
     return df.index
@@ -15,6 +15,14 @@ def get_pred_columns():
         df[category] = df[category].astype('category')
     df = pd.get_dummies(df, prefix='', prefix_sep='')
     return sorted(df.columns)
+
+def get_answers(proba, dataset='test'):
+    pred = pd.DataFrame(proba, index=get_pred_index(dataset=dataset), columns=get_pred_columns())
+
+    for col in pred.columns:
+        pred[col] = pred[col].sort_values(ascending=False).index
+
+    return pred.reset_index(drop=True)
 
 def create_partial_answers(proba, cols):
     pred = pd.DataFrame(proba, index=get_pred_index(), columns=cols)

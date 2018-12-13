@@ -1,51 +1,51 @@
 
 
-# class RNet(models.Sequential):
-#     """
-#         Using pre-trained ResNet50 without head
-#     """
-#     def __init__(self):
-#         super(RNet, self).__init__()
+class RNet(models.Sequential):
+    """
+        Using pre-trained ResNet50 without head
+    """
+    def __init__(self):
+        super(RNet, self).__init__()
 
-#         sizes = [(200,200,3), (7,7,2048), 1024, 37]
+        sizes = [(200,200,3), (7,7,2048), 1024, 37]
 
-#         # Load the pre-trained base model
-#         base = applications.ResNet50(
-#             weights='imagenet',
-#             include_top=False,
-#             input_shape=sizes[0])
-#         # Freeze the layers except the last ones
-#         # for layer in base.layers[:-4]:
-#         #     layer.trainable = False
+        # Load the pre-trained base model
+        base = applications.ResNet50(
+            weights='imagenet',
+            include_top=False,
+            input_shape=sizes[0])
+        # Freeze the layers except the last ones
+        # for layer in base.layers[:-4]:
+        #     layer.trainable = False
 
-#         self.add(base)
-#         self.add(layers.Flatten())
-#         self.add(layers.Dense(sizes[-2], activation='relu'))
-#         self.add(layers.Dense(sizes[-1], activation='sigmoid'))
-# rnet = RNet()
-# rnet.summary()
+        self.add(base)
+        self.add(layers.Flatten())
+        self.add(layers.Dense(sizes[-2], activation='relu'))
+        self.add(layers.Dense(sizes[-1], activation='sigmoid'))
+rnet = RNet()
+rnet.summary()
 
-# general_class_train_gen = generator.flow_from_directory(subset='training',   directory='../dataset_v2/train/divided/general_class', **flow_args)
-# general_class_valid_gen = generator.flow_from_directory(subset='validation', directory='../dataset_v2/train/divided/general_class', **flow_args)
+general_class_train_gen = generator.flow_from_directory(subset='training',   directory='../dataset_v2/train/divided/general_class', **flow_args)
+general_class_valid_gen = generator.flow_from_directory(subset='validation', directory='../dataset_v2/train/divided/general_class', **flow_args)
 
-# large_vehicle_train_gen = generator.flow_from_directory(subset='training',   directory='../dataset_v2/train/divided/large_vehicle', **flow_args)
-# large_vehicle_valid_gen = generator.flow_from_directory(subset='validation', directory='../dataset_v2/train/divided/large_vehicle', **flow_args)
+large_vehicle_train_gen = generator.flow_from_directory(subset='training',   directory='../dataset_v2/train/divided/large_vehicle', **flow_args)
+large_vehicle_valid_gen = generator.flow_from_directory(subset='validation', directory='../dataset_v2/train/divided/large_vehicle', **flow_args)
 
-# small_vehicle_gen = generator.flow_from_directory(directory='../dataset_v2/train/divided/small_vehicle', **flow_args)
-# color_gen         = generator.flow_from_directory(directory='../dataset_v2/train/divided/color', **flow_args)
+small_vehicle_gen = generator.flow_from_directory(directory='../dataset_v2/train/divided/small_vehicle', **flow_args)
+color_gen         = generator.flow_from_directory(directory='../dataset_v2/train/divided/color', **flow_args)
 
 
-# train_gen = large_vehicle_train_gen
-# valid_gen = large_vehicle_valid_gen
+train_gen = large_vehicle_train_gen
+valid_gen = large_vehicle_valid_gen
 
-# x_batch, y_batch = next(large_vehicle_train_gen)
-# for i in range (5):
-#     image = x_batch[i]
-#     image = image.astype(np.float)
-#     plt.imshow(image)
-#     plt.show()
+x_batch, y_batch = next(large_vehicle_train_gen)
+for i in range (5):
+    image = x_batch[i]
+    image = image.astype(np.float)
+    plt.imshow(image)
+    plt.show()
 
-# const = -1/(Nm.sum() + len(w))
+const = -1/(Nm.sum() + len(w))
 
 _EPSILON = K.epsilon()
 
