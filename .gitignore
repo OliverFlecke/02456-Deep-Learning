@@ -2,6 +2,7 @@
 .ipynb
 dataset_v2/
 models/
+figures/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
